@@ -32,6 +32,7 @@ def find_peak_from_kmft(image, param, background = None, maxfiltersize = 3, thre
     nbimage = (1 - (nbimage)) * nbimage / 2
     max_filter = maximum_filter(nbimage, size = maxfiltersize)
     ispeak = (nbimage == max_filter)
+    ispeak = np.array(ispeak, dtype = bool)
     xsize = int(self.param.get_attr('movie_x_size'))
     ysize = int(self.param.get_attr('movie_y_size'))
     if output_type == 'image':
