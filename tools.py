@@ -52,7 +52,7 @@ def find_peak_from_kmft(image, param, background = None, maxfiltersize = 3, outp
             for j in range(ysize):
                 if ispeak[i, j]:
                     data = np.vstack((data, [i, j]))
-        return data
+        return data[1:]
 
 def make_stacked_image(dire, movie_name, param, thre = 30):
     movie = fr.frame(dire, movie_name, param)
@@ -66,8 +66,9 @@ def make_stacked_image(dire, movie_name, param, thre = 30):
 def peak_select_from_hist(peakimg):
     tmp = np.array(peakimg, dtype=np.int)
     peakimg_int = tmp.reshape([512*512, 1])
-    peakimg_int = peakimg_int[peakimg_int!=0]
-    hst = plt.hist(peakimg_int)
+    tp = peakimg_int[peakimg_int!=0]
+    print(tp)
+    hst = plt.hist(tp)
     tau = hst[0][0]/sum(hst[0])
     tmp[tmp < (tau + 1)] = 0
     return tmp
@@ -82,7 +83,30 @@ def show_3d_peak(peakimg):
     cb = fig.colorbar(p, shrink=0.5)
 
 
-
+def remove_background(one_frame, thre):
+    return one_frame * (one_frame > thre)
+    
+def get_peak_data(dire, movie_name, param):
+    movie = fr.frame(dire, movie_name, param)
+    peak_data = [0, 0]
+    for i in range(movie.length):
+        one_frame = movie.get_next_frame()
+        temp = find_peak_from_kmft(one_frame, param, output_type = 'peakdata')
+        peak_data = np.vstack((peak_data, temp))
+    return peak_data[1:]
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
