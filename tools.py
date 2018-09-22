@@ -95,6 +95,11 @@ def get_peak_data(dire, movie_name, param):
         peak_data = np.vstack((peak_data, temp))
     return peak_data[1:]
     
+def peak_data2peak_image(peak_data):
+    peak_image = np.zeros([512, 512],dtype = np.int)
+    for i in peak_data:
+        peak_image[i[0], i[1]] += 1
+    return peak_image
     
     
     
