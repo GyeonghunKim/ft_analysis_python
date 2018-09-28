@@ -90,7 +90,7 @@ def get_peak_data(dire, movie_name, param):
     movie = fr.frame(dire, movie_name, param)
     peak_data = [0, 0]
     for i in range(movie.length):
-        one_frame = movie.get_next_frame()
+        one_frame = remove_background(movie.get_next_frame(), 30)
         temp = find_peak_from_kmft(one_frame, param, output_type = 'peakdata')
         peak_data = np.vstack((peak_data, temp))
     return peak_data[1:]
@@ -101,11 +101,16 @@ def peak_data2peak_image(peak_data):
         peak_image[i[0], i[1]] += 1
     return peak_image
     
+
     
-    
-    
-    
-    
+def get_kernel_intensity(peak_data, one_frame, kernel_rad):
+    kernel_intensity = [0,0,0]
+    for one_point in peak_data:
+        if ((one_point[0] > kernel_rad) and(one_point[0] < 512 - kernel_rad)) and ((one_point[1] > kernel_rad) and(one_point[1] < 512 - kernel_rad)):
+            tmp = [one_point[0], one_point[1], one_frame[one_point[0]-kernel_rad:one_point[0]+kernel_rad, one_point[1]-kernel_rad:one_point[1]+kernel_rad].sum()]
+            kernel_intensity = np.vstack((kernel_intensity, tmp))
+            print(kernel_intensity)
+    return kernel_intensity[1:]
     
     
     

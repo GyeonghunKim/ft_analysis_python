@@ -53,5 +53,3 @@ class frame():
         self.cur_frame = 0
         self.shape = np.fromfile(self.__fID, np.uint16, count=2).astype(int)
     
-    def make_bgImage(self):
-        self.
