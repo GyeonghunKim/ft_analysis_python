@@ -22,7 +22,7 @@ function varargout = trace_analyzer(varargin)
 
 % Edit the above text to modify the response to help trace_analyzer
 
-% Last Modified by GUIDE v2.5 29-Sep-2018 18:19:29
+% Last Modified by GUIDE v2.5 29-Sep-2018 19:00:29
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,9 +54,10 @@ function trace_analyzer_OpeningFcn(hObject, eventdata, handles, varargin)
 
 % Choose default command line output for trace_analyzer
 handles.output = hObject;
-
-handles.cameraType = "sCMOS";
-handles.peakFinder = "ThunderSTORM";
+global cameraType
+global peakFinder
+cameraType = "emCCD";
+peakFinder = "ThunderSTORM";
 
 
 
@@ -111,6 +112,11 @@ function slider1_Callback(hObject, eventdata, handles)
 % hObject    handle to slider1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global which_spot
+global peak_image
+frame_no = floor(get(handles.slider1, 'Value'));
+axes(handles.axes6);
+imagesc(squeeze(peak_image(which_spot,frame_no,:,:)));
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
@@ -133,20 +139,34 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+cur = str2double(get(handles.edit2, 'String'));
+set(handles.edit2, 'String', num2str(cur + 1));
+pushbutton4_Callback(hObject, eventdata, handles);
 
 % --- Executes on button press in pushbutton2.
 function pushbutton2_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+cur = str2double(get(handles.edit2, 'String'));
+set(handles.edit2, 'String', num2str(cur - 1));
+pushbutton4_Callback(hObject, eventdata, handles);
 
 % --- Executes on button press in pushbutton4.
 function pushbutton4_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global trace
+global peak_image
+global which_spot
+which_spot = str2double(get(handles.edit2, 'String'));
+axes(handles.axes1);
+plot(trace(which_spot, :));
+
+axes(handles.axes6);
+imagesc(squeeze(peak_image(which_spot,1,:,:)));
+
 
 
 
@@ -265,10 +285,13 @@ function pushbutton12_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton12 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+global file_name
+global dirr
+global peakFinder
 addpath(cd);
 cd('/media/ghkim/HDD1/smb/fret-tracking')
 
-if handles.peakFinder == "ThunderSTORM"
+if peakFinder == "ThunderSTORM"
     [file_name,dirr] = uigetfile('*.csv');
     set(handles.edit4, 'String', strcat(dirr, file_name));
     addpath(dirr);
@@ -419,5 +442,68 @@ function pushbutton14_Callback(hObject, eventdata, handles)
 global trace
 global peak_image
 global trace_point
+global dirr
+global file_name
+global cameraType
+
+movie_name = strcat(dirr, file_name);
+movie_name = strcat(movie_name(1:end-4), '.pma');
+fid_pma = fopen(movie_name,'r');
+file_info=dir(movie_name);
+if cameraType == 'emCCD'
+    ysize=fread(fid_pma,1,'int16')
+    xsize=fread(fid_pma,1,'int16')
+    
+    film_length = (file_info.bytes-4)/xsize/ysize
+else
+    xsize = 512;
+    ysize = 512;
+    film_length = (file_info.bytes)/xsize/ysize;
+end
+number_spot = length(trace_point);
+trace = zeros(number_spot, film_length);
+peak_image = zeros(number_spot, film_length, 7,7);
 
 
+if cameraType == "emCCD"
+    for i=1:film_length
+        one_frame = fread(fid_pma,[ysize,xsize], 'uint8');
+        for j = 1:number_spot
+            x_point = trace_point(j, 1);
+            y_point = trace_point(j, 2);
+            trace(j, i) = sum(sum(one_frame(x_point - 2:x_point + 2, y_point - 2: y_point + 2)));
+            peak_image(j, i, :, :) = one_frame(x_point - 3:x_point + 3, y_point - 3: y_point + 3);
+        end
+    end
+else
+    disp("sCMOS version not ready. It will upgrade soon:)");
+end
+axes(handles.axes1);
+plot(trace(1, :));
+
+axes(handles.axes6);
+imagesc(squeeze(peak_image(1,1,:,:)));
+
+set(handles.slider1, 'min', 1);
+set(handles.slider1, 'max', film_length);
+set(handles.slider1, 'SliderStep', [1/(film_length-1) , 1/(film_length-1) ]);
+
+% --- Executes when selected object is changed in uibuttongroup1.
+function uibuttongroup1_SelectionChangedFcn(hObject, eventdata, handles)
+% hObject    handle to the selected object in uibuttongroup1 
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global cameraType
+switch hObject
+    case handles.radiobutton2
+        cameraType = 'emCCD';
+    case handles.radiobutton1
+        cameraType = 'sCMOS';
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function uibuttongroup1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to uibuttongroup1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
