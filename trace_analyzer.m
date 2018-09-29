@@ -22,7 +22,7 @@ function varargout = trace_analyzer(varargin)
 
 % Edit the above text to modify the response to help trace_analyzer
 
-% Last Modified by GUIDE v2.5 29-Sep-2018 19:00:29
+% Last Modified by GUIDE v2.5 30-Sep-2018 01:27:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,9 +56,10 @@ function trace_analyzer_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 global cameraType
 global peakFinder
+global stop_subimage
 cameraType = "emCCD";
 peakFinder = "ThunderSTORM";
-
+stop_subimage = false;
 
 
 
@@ -117,7 +118,7 @@ global peak_image
 frame_no = floor(get(handles.slider1, 'Value'));
 axes(handles.axes6);
 imagesc(squeeze(peak_image(which_spot,frame_no,:,:)));
-
+set(handles.edit8, 'String', num2str(frame_no));
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
@@ -221,12 +222,18 @@ function pushbutton6_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+data = get(handles.uitable1, 'Data');
+set(handles.uitable1, 'Data', data(1:end-1,:));
+
+
 
 % --- Executes on button press in pushbutton7.
 function pushbutton7_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton7 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+data = [{nan},{nan},{nan},{nan}];
+set(handles.uitable1, 'Data', data);
 
 
 % --- Executes on button press in pushbutton8.
@@ -234,6 +241,52 @@ function pushbutton8_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton8 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+data = get(handles.uitable1, 'Data');
+matdata = cell2mat(data);
+tmp = size(matdata);
+dt = str2double(get(handles.edit9, 'String'));
+global film_length
+tot_time = dt*film_length
+tmp0 = tot_time;
+tmp1 = 0;
+tmp2 = 0;
+tmp3 = 0;
+tmp4 = 0;
+tmp5 = 0;
+tmp6 = 0;
+tmp7 = 0;
+for i = 1:tmp(1)
+    switch matdata(i, 4)
+        case 1
+            tmp1 = tmp1 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+        case 2
+            tmp2 = tmp2 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+        case 3
+            tmp3 = tmp3 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+        case 4
+            tmp4 = tmp4 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+        case 5
+            tmp5 = tmp5 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+        case 6
+            tmp6 = tmp6 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+        case 7
+            tmp7 = tmp7 + matdata(i, 3);
+            tmp0 = tmp0 - matdata(i, 3);
+    end
+end
+data2 = [{1 - tmp0/tot_time},{tmp0/tot_time},{tmp1/tot_time},{tmp2/tot_time},{tmp3/tot_time},{tmp4/tot_time},{tmp5/tot_time},{tmp6/tot_time},{tmp7/tot_time}];
+data = get(handles.uitable2, 'Data');
+if length(cell2mat(data(1))) == 0 || isnan(cell2mat(data(1)))
+    set(handles.uitable2, 'Data', data2);
+else
+    set(handles.uitable2, 'Data', cat(1, data, data2));
+end
 
 
 % --- Executes on button press in pushbutton9.
@@ -445,7 +498,7 @@ global trace_point
 global dirr
 global file_name
 global cameraType
-
+global film_length
 movie_name = strcat(dirr, file_name);
 movie_name = strcat(movie_name(1:end-4), '.pma');
 fid_pma = fopen(movie_name,'r');
@@ -486,6 +539,7 @@ imagesc(squeeze(peak_image(1,1,:,:)));
 
 set(handles.slider1, 'min', 1);
 set(handles.slider1, 'max', film_length);
+set(handles.slider1, 'value', 1);
 set(handles.slider1, 'SliderStep', [1/(film_length-1) , 1/(film_length-1) ]);
 
 % --- Executes when selected object is changed in uibuttongroup1.
@@ -507,3 +561,128 @@ function uibuttongroup1_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to uibuttongroup1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+
+
+
+function edit8_Callback(hObject, eventdata, handles)
+% hObject    handle to edit8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% Hints: get(hObject,'String') returns contents of edit8 as text
+%        str2double(get(hObject,'String')) returns contents of edit8 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit8_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit8 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on key press with focus on figure1 and none of its controls.
+function figure1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  structure with the following fields (see MATLAB.UI.FIGURE)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+input_key = eventdata.Key;
+switch input_key
+    case 'n'
+        pushbutton1_Callback(hObject, eventdata, handles);
+    case 'b'
+        pushbutton2_Callback(hObject, eventdata, handles);
+    case 'v'
+        tmp = get(handles.slider1, 'Value');
+        set(handles.slider1, 'Value', tmp+1);
+        slider1_Callback(hObject, eventdata, handles);
+    case 'c'        
+        tmp = get(handles.slider1, 'Value');
+        set(handles.slider1, 'Value', tmp-1);
+        slider1_Callback(hObject, eventdata, handles);
+    case '1'
+        graphic_input(hObject, eventdata, handles, 1)
+    case '2'
+        graphic_input(hObject, eventdata, handles, 2)
+    case '3'
+        graphic_input(hObject, eventdata, handles, 3)
+    case '4'
+        graphic_input(hObject, eventdata, handles, 4)
+    case '5'
+        graphic_input(hObject, eventdata, handles, 5)
+    case '6'
+        graphic_input(hObject, eventdata, handles, 6)
+    case '7'
+        graphic_input(hObject, eventdata, handles, 7)
+end
+
+
+
+
+% --- Executes on button press in pushbutton16.
+function pushbutton16_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton16 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global stop_subimage
+for i = get(handles.slider1, 'Value'):get(handles.slider1, 'Max')
+    set(handles.slider1, 'Value', i);
+    slider1_Callback(hObject, eventdata, handles);
+    pause(0.01);
+    if stop_subimage
+        stop_subimage = false;
+        break;
+    end    
+end
+
+
+
+% --- Executes on button press in pushbutton17.
+function pushbutton17_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton17 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global stop_subimage
+stop_subimage = true;
+
+
+function graphic_input(hObject, eventdata, handles, type)
+    [x, ~] = ginput(2);
+    data = get(handles.uitable1, 'Data');
+    if length(cell2mat(data(1))) == 0 || isnan(cell2mat(data(1)))
+        set(handles.uitable1, 'Data', [num2cell(x'), num2cell(x(2)-x(1)), {type}]);
+    else
+        set(handles.uitable1, 'Data', cat(1, data, [num2cell(x'), num2cell(x(2)-x(1)), {type}]));
+    end
+
+
+
+function edit9_Callback(hObject, eventdata, handles)
+% hObject    handle to edit9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit9 as text
+%        str2double(get(hObject,'String')) returns contents of edit9 as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit9_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit9 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
