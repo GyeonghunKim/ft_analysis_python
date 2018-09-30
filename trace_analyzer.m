@@ -22,7 +22,7 @@ function varargout = trace_analyzer(varargin)
 
 % Edit the above text to modify the response to help trace_analyzer
 
-% Last Modified by GUIDE v2.5 30-Sep-2018 01:27:28
+% Last Modified by GUIDE v2.5 30-Sep-2018 16:47:20
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -62,7 +62,8 @@ peakFinder = "ThunderSTORM";
 stop_subimage = false;
 global real_tracepoint;
 real_tracepoint= [];
-
+global inner_pad
+inner_pad = 5;
 
 
 
@@ -378,17 +379,18 @@ imagesc(stacked_image');
 
 global nearfarintensity
 global peak_from_stacked_image
-temp_peak = FastPeakFind(handles.stacked_image);
+global inner_pad
+temp_peak = FastPeakFind(stacked_image);
 peak_from_stacked_image = [temp_peak(1:2:end),temp_peak(2:2:end)];
 numspot = length(temp_peak)/2
 nearfarintensity = zeros(2, length(temp_peak)/2);
 x_data = peak_from_stacked_image(:,1);
 y_data = peak_from_stacked_image(:,2);
 for i = 1:numspot
-    if (x_data(i) < 512 - 3) && (x_data(i) > 1 + 3)
-        if (y_data(i) < 512 - 3) && (y_data(i) > 1 + 3)
-            near_sum = sum(sum(handles.stacked_image(x_data(i)-1:x_data(i)+1, y_data(i)-1:y_data(i)+1)));
-            far_sum = sum(sum(handles.stacked_image(x_data(i)-3:x_data(i)+3, y_data(i)-3:y_data(i)+3)));
+    if (x_data(i) < 512 - inner_pad) && (x_data(i) > 1 + inner_pad)
+        if (y_data(i) < 512 - inner_pad) && (y_data(i) > 1 + inner_pad)
+            near_sum = sum(sum(stacked_image(x_data(i)-1:x_data(i)+1, y_data(i)-1:y_data(i)+1)));
+            far_sum = sum(sum(stacked_image(x_data(i)-3:x_data(i)+3, y_data(i)-3:y_data(i)+3)));
             near_temp = (near_sum)/9;
             far_temp = (far_sum - near_sum)/40;
             nearfarintensity(:,i) = [near_temp, far_temp];
@@ -396,6 +398,7 @@ for i = 1:numspot
     end
 end
 axes(handles.axes5);
+hold on;
 scatter(nearfarintensity(1,:), nearfarintensity(2,:), 'r.');
 xlabel('near_mean');
 ylabel('far_mean');
@@ -480,8 +483,9 @@ end
 trace_point = trace_point(2:end, :);
 set(handles.edit7, 'String', num2str(length(trace_point)));
 global real_tracepoint;
-scatter(real_tracepoint(:,1), real_tracepoint(:,2), 'b');
-
+if real_tracepoint ~= []
+    scatter(real_tracepoint(:,1), real_tracepoint(:,2), 'b');
+end
 
 axes(handles.axes4);
 hold off;
@@ -542,7 +546,7 @@ else
 end
 number_spot = length(trace_point);
 trace = zeros(number_spot, film_length);
-peak_image = zeros(number_spot, film_length, 7,7);
+peak_image = zeros(number_spot, film_length, 9,9);
 
 
 if cameraType == "emCCD"
@@ -551,8 +555,8 @@ if cameraType == "emCCD"
         for j = 1:number_spot
             x_point = trace_point(j, 1);
             y_point = trace_point(j, 2);
-            trace(j, i) = sum(sum(one_frame(x_point - 2:x_point + 2, y_point - 2: y_point + 2)));
-            peak_image(j, i, :, :) = one_frame(x_point - 3:x_point + 3, y_point - 3: y_point + 3);
+            trace(j, i) = sum(sum(one_frame(x_point - 2:x_point + 2, y_point - 2: y_point + 2)))/25 - sum(sum(one_frame(x_point - 5:x_point + 5, y_point - 5: y_point + 5)))/121;
+            peak_image(j, i, :, :) = one_frame(x_point - 4:x_point + 4, y_point - 4: y_point + 4);
         end
     end
 else
@@ -713,3 +717,15 @@ function edit9_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+
+% --- Executes on button press in pushbutton18.
+function pushbutton18_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton18 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+global trace
+global dirr
+global file_name
+csv_name = strcat(dirr, file_name(1:end-4), '_trace.csv');
+csvwrite(csv_name, trace);
