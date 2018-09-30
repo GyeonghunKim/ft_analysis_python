@@ -22,7 +22,7 @@ function varargout = trace_analyzer(varargin)
 
 % Edit the above text to modify the response to help trace_analyzer
 
-% Last Modified by GUIDE v2.5 30-Sep-2018 16:47:20
+% Last Modified by GUIDE v2.5 30-Sep-2018 17:12:31
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -264,26 +264,26 @@ tmp7 = 0;
 for i = 1:tmp(1)
     switch matdata(i, 4)
         case 1
-            tmp1 = tmp1 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp1 = tmp1 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
         case 2
-            tmp2 = tmp2 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp2 = tmp2 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
         case 3
-            tmp3 = tmp3 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp3 = tmp3 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
         case 4
-            tmp4 = tmp4 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp4 = tmp4 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
         case 5
-            tmp5 = tmp5 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp5 = tmp5 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
         case 6
-            tmp6 = tmp6 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp6 = tmp6 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
         case 7
-            tmp7 = tmp7 + matdata(i, 3);
-            tmp0 = tmp0 - matdata(i, 3);
+            tmp7 = tmp7 + dt * matdata(i, 3);
+            tmp0 = tmp0 - dt * matdata(i, 3);
     end
 end
 data2 = [{1 - tmp0/tot_time},{tmp0/tot_time},{tmp1/tot_time},{tmp2/tot_time},{tmp3/tot_time},{tmp4/tot_time},{tmp5/tot_time},{tmp6/tot_time},{tmp7/tot_time}];
@@ -299,7 +299,7 @@ trace_numb = tracepoint_map(floor(str2double(get(handles.edit2, 'String'))))
 point = [nearfarintensity(1,trace_numb), nearfarintensity(2,trace_numb)];
 real_tracepoint = cat(1, real_tracepoint, point);
 pushbutton13_Callback(hObject, eventdata, handles);
-
+pushbutton7_Callback(hObject, eventdata, handles);
 
 
 % --- Executes on button press in pushbutton9.
@@ -307,6 +307,8 @@ function pushbutton9_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton9 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+data = get(handles.uitable2, 'Data');
+set(handles.uitable2, 'Data', data(1:end-1,:));
 
 
 % --- Executes on button press in pushbutton10.
@@ -314,13 +316,19 @@ function pushbutton10_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton10 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
+data = [{nan},{nan},{nan},{nan},{nan},{nan},{nan},{nan},{nan}];
+set(handles.uitable2, 'Data', data);
 
 % --- Executes on button press in pushbutton11.
 function pushbutton11_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton11 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+axes(handles.axes3);
+n_bins = str2double(get(handles.edit3, 'String'));
+data = get(handles.uitable2, 'Data');
+matdata = cell2mat(data);
+histogram(matdata(:,1), n_bins)
 
 
 
@@ -483,7 +491,7 @@ end
 trace_point = trace_point(2:end, :);
 set(handles.edit7, 'String', num2str(length(trace_point)));
 global real_tracepoint;
-if real_tracepoint ~= []
+if length(real_tracepoint) ~= 0
     scatter(real_tracepoint(:,1), real_tracepoint(:,2), 'b');
 end
 
@@ -729,3 +737,26 @@ global dirr
 global file_name
 csv_name = strcat(dirr, file_name(1:end-4), '_trace.csv');
 csvwrite(csv_name, trace);
+
+
+% --- Executes on selection change in popupmenu2.
+function popupmenu2_Callback(hObject, eventdata, handles)
+% hObject    handle to popupmenu2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns popupmenu2 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from popupmenu2
+
+
+% --- Executes during object creation, after setting all properties.
+function popupmenu2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to popupmenu2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
