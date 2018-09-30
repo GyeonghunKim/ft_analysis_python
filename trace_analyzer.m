@@ -60,6 +60,9 @@ global stop_subimage
 cameraType = "emCCD";
 peakFinder = "ThunderSTORM";
 stop_subimage = false;
+global real_tracepoint;
+real_tracepoint= [];
+
 
 
 
@@ -246,7 +249,9 @@ matdata = cell2mat(data);
 tmp = size(matdata);
 dt = str2double(get(handles.edit9, 'String'));
 global film_length
-tot_time = dt*film_length
+global real_tracepoint
+global trace_point
+tot_time = dt*film_length;
 tmp0 = tot_time;
 tmp1 = 0;
 tmp2 = 0;
@@ -287,6 +292,13 @@ if length(cell2mat(data(1))) == 0 || isnan(cell2mat(data(1)))
 else
     set(handles.uitable2, 'Data', cat(1, data, data2));
 end
+global nearfarintensity;
+global tracepoint_map;
+trace_numb = tracepoint_map(floor(str2double(get(handles.edit2, 'String'))))
+point = [nearfarintensity(1,trace_numb), nearfarintensity(2,trace_numb)];
+real_tracepoint = cat(1, real_tracepoint, point);
+pushbutton13_Callback(hObject, eventdata, handles);
+
 
 
 % --- Executes on button press in pushbutton9.
@@ -341,6 +353,7 @@ function pushbutton12_Callback(hObject, eventdata, handles)
 global file_name
 global dirr
 global peakFinder
+global stacked_image
 addpath(cd);
 cd('/media/ghkim/HDD1/smb/fret-tracking')
 
@@ -351,17 +364,17 @@ if peakFinder == "ThunderSTORM"
     data_table = readtable(file_name);
     x_data = floor(data_table.x_nm_/104);
     y_data = floor(data_table.y_nm_/104);
-    handles.stacked_image = zeros(512);
+    stacked_image = zeros(512);
     for i = 1:length(x_data)
         if (x_data(i) < 512) && (x_data(i) > 1)
             if (y_data(i) < 512) && (y_data(i) > 1)
-                handles.stacked_image(x_data(i), y_data(i)) = handles.stacked_image(x_data(i), y_data(i)) + 1;  
+                stacked_image(x_data(i), y_data(i)) = stacked_image(x_data(i), y_data(i)) + 1;  
             end
         end
     end
 end
 axes(handles.axes4);
-imagesc(handles.stacked_image');
+imagesc(stacked_image');
 
 global nearfarintensity
 global peak_from_stacked_image
@@ -443,22 +456,36 @@ function pushbutton13_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global nearfarintensity;
 global trace_point;
-global peak_from_stacked_image
+global peak_from_stacked_image;
+global stacked_image
+global tracepoint_map
 near_crit = str2double(get(handles.edit5, 'String'));
 far_crit = str2double(get(handles.edit6, 'String'));
 axes(handles.axes5);
+hold off;
+scatter(nearfarintensity(1,:), nearfarintensity(2,:), 'r.');
 hold on
 refline([0 far_crit]);
 plot([near_crit, near_crit],[0, max(nearfarintensity(2,:))], 'r');
 trace_point = zeros(1,2);
+tracepoint_map = zeros(1, length(nearfarintensity));
+k = 1;
 for i = 1:length(nearfarintensity)
     if nearfarintensity(1,i) > near_crit && nearfarintensity(2,i) < far_crit
         trace_point = cat(1, trace_point, peak_from_stacked_image(i, :));
+        tracepoint_map(k) = i;
+        k = k + 1;
     end
 end
-trace_point = trace_point(2:end, :)
+trace_point = trace_point(2:end, :);
 set(handles.edit7, 'String', num2str(length(trace_point)));
+global real_tracepoint;
+scatter(real_tracepoint(:,1), real_tracepoint(:,2), 'b');
+
+
 axes(handles.axes4);
+hold off;
+imagesc(stacked_image');
 hold on;
 plot(trace_point(:,1), trace_point(:,2), 'ro');
 
